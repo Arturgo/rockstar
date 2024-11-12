@@ -1,5 +1,6 @@
 # Libs
 json/*
+HiGHS/*
 
 # Prerequisites
 *.d
