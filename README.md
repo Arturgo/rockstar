@@ -8,6 +8,6 @@ Dossier KIRO pour l'équipe ROck*
 
 ## Libs
 On prévoit d'utiliser les librairies suivantes ; à installer et tester avant la compétition.
-- [nlohmann/json]{https://github.com/nlohmann/json} pour le JSON.
-- [ERGO-Code/HiGHS]{https://github.com/ERGO-Code/HiGHS} pour le solveur LP/MIP.
+- https://github.com/nlohmann/json pour le JSON.
+- https://github.com/ERGO-Code/HiGHS pour le solveur LP/MIP.
 
