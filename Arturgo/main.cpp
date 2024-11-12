@@ -38,10 +38,13 @@ int main(int nbArgs, char* args[]) {
     Solution solution = inst.solve();
     cerr << "done" << endl;
 
+    double score = solution.score();
+    cerr << "score: " << score << endl;
+
     json output_data = solution.to_json();
 
     auto input_path = filesystem::path(filename);
-    string output_filename = string(input_path.parent_path()) + "/sol-" + to_string(solution.score()) + "-" + string(input_path.filename());
+    string output_filename = string(input_path.parent_path()) + "/sol-" + to_string(score) + "-" + string(input_path.filename());
 
     ofstream fout(output_filename);
     fout << output_data << endl;
