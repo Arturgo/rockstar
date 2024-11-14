@@ -45,8 +45,8 @@ Solution solve(const Instance& instance) {
     for (int i = 0; i < n; i++)
         permutation.push_back(i);
 
-    // auto rng = std::default_random_engine {};
-    // std::shuffle(permutation.begin(), permutation.end(), rng);
+    auto rng = std::default_random_engine {};
+    std::shuffle(permutation.begin(), permutation.end(), rng);
 
     for (const Shop& shop : instance.shops)
     {
