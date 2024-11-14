@@ -64,6 +64,7 @@ struct Instance {
 
     Instance(json data);
     Solution solve();
+    Solution dumb_solution();
 };
 
 /* Logique des fonctions */
@@ -183,19 +184,41 @@ Instance::Instance(json data) {
     }
 }
 
-Solution Instance::solve() {
+Solution Instance::dumb_solution() {
     Solution sol; sol.inst = this;
+    vector<int> id(nb_vehicules());
+    iota(id.begin(), id.end(), 0);
+    vector<int> pid = paint_reorder(id);
+    sol.ordres.push_back({id, id});
+    sol.ordres.push_back({id, pid});
+    sol.ordres.push_back({pid, pid});
+    return sol;
+}
+
+Solution Instance::solve() {
+    Solution best = dumb_solution();
+    double best_score = best.score();
 
     vector<int> id(nb_vehicules());
     iota(id.begin(), id.end(), 0);
 
-    vector<int> pid = paint_reorder(id);
+    for(int i = 0;i < 100000;i++) {
+        random_shuffle(id.begin(), id.end());
 
-    sol.ordres.push_back({id, id});
-    sol.ordres.push_back({id, pid});
-    sol.ordres.push_back({pid, pid});
+        Solution sol; sol.inst = this;
+        vector<int> pid = paint_reorder(id);
+        sol.ordres.push_back({id, id});
+        sol.ordres.push_back({id, pid});
+        sol.ordres.push_back({pid, pid});
 
-    return sol;
+        double score = sol.score();
+        if(score < best_score) {
+            best_score = score;
+            best = sol;
+        }
+    }
+
+    return best;
 }
 
 json Solution::to_json() {
