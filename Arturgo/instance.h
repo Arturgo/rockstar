@@ -205,7 +205,9 @@ Solution Instance::solve() {
         best.ordres[2].entry
     };
 
-    for(int i = 0;i < 1000000;i++) {
+    double T = 1e3;
+    int i = 0;
+    while(T >= 1e-6) {
         vector<vector<int>> old_inputs = inputs;
 
         if(rand() % 2 == 0) {
@@ -237,13 +239,18 @@ Solution Instance::solve() {
         sol.ordres.push_back({inputs[2], inputs[2]});
 
         double score = sol.score();
-        if(score < best_score) {
+        double D = best_score - sol.score();
+
+        if(D > 0 || rand() / (double)RAND_MAX <= exp(D / T)) {
             best_score = score;
             best = sol;
         } else {
             inputs = old_inputs;
         }
-        if(i % 10000 == 0) cerr << best_score << endl;
+        i++;
+        if(i % 100 == 0) T *= 0.999;
+
+        if(i % 10000 == 0) cerr << i << " " << T << " " << best_score << endl;
     }
 
     return best;
