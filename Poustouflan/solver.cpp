@@ -1,6 +1,7 @@
 #include "solver.h"
 #include <algorithm>
 #include <random>
+#include <iostream>
 
 std::vector<int> paint_perm(std::vector<int>& input_perm, const Instance& instance)
 {
@@ -54,6 +55,8 @@ Solution solve(const Instance& instance) {
             permutation = paint_perm(permutation, instance);
         result.shop_results[shop.name].exit = permutation;
     }
+
+    std::cerr << result.compute_score(instance) << std::endl;
 
     return result;
 }
