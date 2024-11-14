@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -I./ -g
+CXXFLAGS = -std=c++17 -I./ -g -fsanitize=address
 TARGET = solver
 SRC = main.cpp solver.cpp instance.cpp
 INSTANCES_DIR = ../instances

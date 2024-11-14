@@ -14,9 +14,16 @@ struct ShopSolution {
     std::vector<int> exit;
 
     json to_json() const {
+        std::vector<int> shifted_entry;
+        std::vector<int> shifted_exit;
+        // 1 - index
+        for (int i: entry)
+            shifted_entry.push_back(i+1);
+        for (int j: exit)
+            shifted_exit.push_back(j+1);
         return json{
-            {"entry", entry},
-            {"exit", exit}
+            {"entry", shifted_entry},
+            {"exit", shifted_exit}
         };
     }
 };
