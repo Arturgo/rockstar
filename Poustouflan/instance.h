@@ -8,6 +8,7 @@
 #include <vector>
 #include <memory>
 #include <stdexcept>
+#include <iostream>
 
 using namespace std;
 using json = nlohmann::json;
@@ -68,6 +69,7 @@ public:
         throw std::runtime_error("Shop not found: " + shop_name);
     }
 
+    virtual int get_cost(const vector<int> cars) = 0;
     virtual void from_json(const json& j, const std::vector<Shop>& all_shops, int n) = 0;
     static std::shared_ptr<Constraint> create_constraint(const json& j, const std::vector<Shop>& all_shops, int n);
 };
@@ -88,7 +90,26 @@ public:
         vehicles.resize(n);
 
         for (int v : raw_vehicles)
-            vehicles[v] = true;
+            vehicles[v - 1] = true;
+    }
+
+    int get_cost(const vector<int> cars) {
+        int batch = 0;
+        int current_cost = 0;
+        for (int car : cars) {
+            if (vehicles[car]) {
+                batch += 1;
+            } else if (batch != 0) {
+                int d = max(0, max(min_vehicles - batch, batch - max_vehicles));
+                current_cost += d * d;
+                batch = 0;
+            }
+        }
+        if (batch > 0) {
+            int d = max(0, max(min_vehicles - batch, batch - max_vehicles));
+            current_cost += d * d;
+        }
+        return current_cost * cost;
     }
 };
 
@@ -111,6 +132,19 @@ public:
             }
         }
     }
+
+    int get_cost(const vector<int> cars) {
+        int current_cost = 0;
+        int lot = partition[cars[0]];
+        for (int car : cars) {
+            int lot2 = partition[car];
+            if (lot2 != lot) {
+                current_cost++;
+            };
+            lot = lot2;
+        }
+        return cost * current_cost;
+    }
 };
 
 class RollingWindowConstraint : public Constraint {
@@ -129,7 +163,32 @@ public:
         vehicles.resize(n);
 
         for (int v : raw_vehicles)
-            vehicles[v] = true;
+            vehicles[v - 1] = true;
+    }
+
+    int get_cost(const vector<int> cars) {
+        int current_cost = 0;
+        int nb_in_window = 0;
+        for (int i = 0; i < window_size; i++) {
+            if (vehicles[cars[i]]) {
+                nb_in_window += 1;
+            }
+        }
+        if (nb_in_window > max_vehicles) {
+            current_cost += (nb_in_window - max_vehicles) * (nb_in_window - max_vehicles);
+        }
+        for (int i = window_size; i < cars.size(); i++) {
+            if (vehicles[cars[i]]) {
+                nb_in_window += 1;
+            }
+            if (vehicles[cars[i - window_size]]) {
+                nb_in_window -= 1;
+            }
+            if (nb_in_window > max_vehicles) {
+                current_cost += (nb_in_window - max_vehicles) * (nb_in_window - max_vehicles);
+            }
+        }
+        return current_cost * cost;
     }
 };
 
