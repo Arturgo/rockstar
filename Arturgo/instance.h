@@ -205,64 +205,94 @@ Solution Instance::dumb_solution() {
 }
 
 Solution Instance::solve() {
+    mutex mtx;
     Solution best = dumb_solution();
     double best_score = best.score();
 
-    vector<vector<int>> inputs = {
-        best.ordres[0].entry,
-        best.ordres[1].entry,
-        best.ordres[2].entry
+    double T = 5e4;
+    int bonus = 0;
+
+    auto lambda = [&](int id) {
+        while(T > 1e-8) {
+            mtx.lock();
+            vector<vector<int>> inputs = {
+                best.ordres[0].entry,
+                best.ordres[1].entry,
+                best.ordres[2].entry
+            };
+            mtx.unlock();
+
+            if(rand() % 3 == 0) {
+                int station = rand() % 3;
+                int id1 = rand() % nb_vehicules();
+                int id2 = rand() % nb_vehicules();
+                swap(inputs[station][id1], inputs[station][id2]);
+            } else if(rand() % 2 == 0) {
+                int id1 = rand() % nb_vehicules();
+                int id2 = rand() % nb_vehicules();
+
+                int pos1, pos2;
+                for(int iStation = 0;iStation < 3;iStation++) {
+                    for(int iVehicle = 0;iVehicle < nb_vehicules();iVehicle++) {
+                        if(inputs[iStation][iVehicle] == id1) {
+                            pos1 = iVehicle;
+                        }
+                        if(inputs[iStation][iVehicle] == id2) {
+                            pos2 = iVehicle;
+                        }
+                    }
+                    swap(inputs[iStation][pos1], inputs[iStation][pos2]);
+                }
+            } else {
+                int id1 = rand() % nb_vehicules();
+                int id2 = rand() % nb_vehicules();
+                int id3 = rand() % nb_vehicules();
+
+                int pos1, pos2, pos3;
+                for(int iStation = 0;iStation < 3;iStation++) {
+                    for(int iVehicle = 0;iVehicle < nb_vehicules();iVehicle++) {
+                        if(inputs[iStation][iVehicle] == id1) {
+                            pos1 = iVehicle;
+                        }
+                        if(inputs[iStation][iVehicle] == id2) {
+                            pos2 = iVehicle;
+                        }
+                        if(inputs[iStation][iVehicle] == id3) {
+                            pos3 = iVehicle;
+                        }
+                    }
+                    swap(inputs[iStation][pos1], inputs[iStation][pos2]);
+                    swap(inputs[iStation][pos2], inputs[iStation][pos3]);
+                }
+            }
+
+            Solution sol; sol.inst = this;
+            sol.ordres.push_back({inputs[0], inputs[0]});
+            sol.ordres.push_back({inputs[1], paint_reorder(inputs[1])});
+            sol.ordres.push_back({inputs[2], inputs[2]});
+
+            double score = sol.score();
+            double D = best_score - score;
+
+            if(D > 0 || rand() / (double)RAND_MAX <= exp(D / T)) {
+                mtx.lock();
+                best_score = score;
+                best = sol;
+                mtx.unlock();
+            } 
+            if(rand() % 100 == 0) T *= 0.99995;
+            if(id == 0 && rand() % 10000 == 0) cerr << T << " " << best_score << endl;
+        }
     };
 
-    double T = 1e6;
-    int i = 0;
-    int bonus = 0;
-    while(bonus < 1000000) {
-        if (T < 1e-9)
-            bonus++;
-        vector<vector<int>> old_inputs = inputs;
+    vector<thread> threads;
 
-        if(rand() % 15 == 0) {
-            int station = rand() % 3;
-            int id1 = rand() % nb_vehicules();
-            int id2 = rand() % nb_vehicules();
-            swap(inputs[station][id1], inputs[station][id2]);
-        } else {
-            int id1 = rand() % nb_vehicules();
-            int id2 = rand() % nb_vehicules();
+    for(int i = 0;i < 16;i++) {
+        threads.push_back(thread(lambda, i));
+    }
 
-            int pos1, pos2;
-            for(int iStation = 0;iStation < 3;iStation++) {
-                for(int iVehicle = 0;iVehicle < nb_vehicules();iVehicle++) {
-                    if(inputs[iStation][iVehicle] == id1) {
-                        pos1 = iVehicle;
-                    }
-                    if(inputs[iStation][iVehicle] == id2) {
-                        pos2 = iVehicle;
-                    }
-                }
-                swap(inputs[iStation][pos1], inputs[iStation][pos2]);
-            }
-        }
-
-        Solution sol; sol.inst = this;
-        sol.ordres.push_back({inputs[0], inputs[0]});
-        sol.ordres.push_back({inputs[1], paint_reorder(inputs[1])});
-        sol.ordres.push_back({inputs[2], inputs[2]});
-
-        double score = sol.score();
-        double D = best_score - score;
-
-        if(D > 0 || rand() / (double)RAND_MAX <= exp(D / T)) {
-            best_score = score;
-            best = sol;
-        } else {
-            inputs = old_inputs;
-        }
-        i++;
-        if(i % 50 == 0) T *= 0.99995;
-
-        if(i % 10000 == 0) cerr << i << " " << T << " " << best_score << endl;
+    for(int i = 0;i < (int)threads.size();i++) {
+        threads[i].join();
     }
 
     return best;
