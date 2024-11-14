@@ -35,6 +35,14 @@ struct Batch {
     vector<bool> is_in;
 };
 
+struct Stat {
+    double sequencing;
+    double partition;
+    double window;
+    double batch;
+    void display();
+};
+
 struct Solution {
     Instance* inst;
 
@@ -42,6 +50,7 @@ struct Solution {
     
     json to_json();
     double score();
+    Stat stat();
 };
 
 struct Instance {
@@ -348,6 +357,35 @@ double Solution::score() {
     }
 
     return total;
+}
+
+Stat Solution::stat() {
+    Stat s;
+
+    for(int iStation = 0;iStation < (int)inst->stations.size() - 1;iStation++) {
+        s.sequencing += inst->rcost * inst->resequencing_cost(ordres[iStation].exit, ordres[iStation + 1].entry, inst->stations[iStation].Delta);
+    }
+
+    for(const Partition& part : inst->partitions) {
+        s.partition += part.cost * inst->partition_cost(part.partition, ordres[part.iStation].entry);
+    }
+
+    for(const RollingWindow& window : inst->windows) {
+        s.window += window.cost * inst->window_cost(window.is_in, window.window_size, window.maximum, ordres[window.iStation].entry);
+    }
+
+    for(const Batch& batch : inst->batches) {
+        s.batch += batch.cost * inst->batch_cost(batch.is_in, batch.minimum, batch.maximum, ordres[batch.iStation].entry);
+    }
+
+    return s;
+}
+
+void Stat::display() {
+    cerr << "sequencing : " << sequencing << endl;
+    cerr << "partition  : " << partition << endl;
+    cerr << "window     : " << window << endl;
+    cerr << "batch      : " << batch << endl;
 }
 
 #endif
