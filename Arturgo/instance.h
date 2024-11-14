@@ -199,23 +199,32 @@ Solution Instance::solve() {
     Solution best = dumb_solution();
     double best_score = best.score();
 
-    vector<int> id(nb_vehicules());
-    iota(id.begin(), id.end(), 0);
+    vector<vector<int>> inputs = {
+        best.ordres[0].entry,
+        best.ordres[1].entry,
+        best.ordres[2].entry
+    };
 
     for(int i = 0;i < 100000;i++) {
-        random_shuffle(id.begin(), id.end());
+        int station = rand() % 3;
+        int id1 = rand() % nb_vehicules();
+        int id2 = rand() % nb_vehicules();
+
+        swap(inputs[station][id1], inputs[station][id2]);
 
         Solution sol; sol.inst = this;
-        vector<int> pid = paint_reorder(id);
-        sol.ordres.push_back({id, id});
-        sol.ordres.push_back({id, pid});
-        sol.ordres.push_back({pid, pid});
+        sol.ordres.push_back({inputs[0], inputs[0]});
+        sol.ordres.push_back({inputs[1], paint_reorder(inputs[1])});
+        sol.ordres.push_back({inputs[2], inputs[2]});
 
         double score = sol.score();
         if(score < best_score) {
             best_score = score;
             best = sol;
+        } else {
+            swap(inputs[station][id1], inputs[station][id2]);
         }
+        if(i % 1000 == 0) cerr << best_score << " " << score << endl;
     }
 
     return best;
