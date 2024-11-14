@@ -9,7 +9,7 @@ RESULT_DIR = results
 all: $(TARGET) run-all
 
 # Compile the solver if necessary
-$(TARGET): $(SRC) instance.h result.h
+$(TARGET): $(SRC) instance.h solution.h
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRC)
 
 # Rule to process a specific instance file

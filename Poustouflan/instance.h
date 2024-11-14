@@ -6,11 +6,14 @@
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <memory>
+#include <stdexcept>
 
 using namespace std;
 using json = nlohmann::json;
 
-// Shop struct
+// Forward declaration of Shop to use in Constraint class
+class Shop;
+
 struct Shop {
     std::string name;
     int resequencing_lag;
@@ -23,15 +26,16 @@ struct Shop {
     }
 };
 
-// Vehicle struct
 struct Vehicle {
     int id;
-    std::string type;
+    bool two_tone;
 
     static Vehicle from_json(const json& j) {
         Vehicle vehicle;
         j.at("id").get_to(vehicle.id);
-        j.at("type").get_to(vehicle.type);
+        std::string type;
+        j.at("type").get_to(type);
+        vehicle.two_tone = (type == "two-tone");
         return vehicle;
     }
 };
@@ -41,114 +45,82 @@ class Constraint {
 public:
     int id;
     std::string type;
-    std::string shop;
+    Shop* shop;
     int cost;
 
     virtual ~Constraint() = default;
 
-    virtual void from_json(const json& j) = 0;  // Pure virtual function to parse from JSON
-    virtual json to_json() const = 0;           // To JSON representation of the constraint
+    void from_json_base(const json& j, const std::vector<Shop>& all_shops) {
+        j.at("id").get_to(id);
+        j.at("type").get_to(type);
+        j.at("cost").get_to(cost);
 
-    static std::shared_ptr<Constraint> create_constraint(const json& j);  // Declaration here
+        std::string shop_name;
+        j.at("shop").get_to(shop_name);
+        for (const auto& s : all_shops) {
+            if (s.name == shop_name) {
+                shop = const_cast<Shop*>(&s);
+                return;
+            }
+        }
+        throw std::runtime_error("Shop not found: " + shop_name);
+    }
+
+    virtual void from_json(const json& j, const std::vector<Shop>& all_shops) = 0;
+    static std::shared_ptr<Constraint> create_constraint(const json& j, const std::vector<Shop>& all_shops);
 };
 
-// BatchSizeConstraint class derived from Constraint
 class BatchSizeConstraint : public Constraint {
 public:
     int min_vehicles;
     int max_vehicles;
     std::vector<int> vehicles;
 
-    void from_json(const json& j) override {
-        j.at("id").get_to(id);
-        j.at("type").get_to(type);
-        j.at("shop").get_to(shop);
-        j.at("cost").get_to(cost);
+    void from_json(const json& j, const std::vector<Shop>& all_shops) override {
+        from_json_base(j, all_shops);
         j.at("min_vehicles").get_to(min_vehicles);
         j.at("max_vehicles").get_to(max_vehicles);
         j.at("vehicles").get_to(vehicles);
     }
-
-    json to_json() const override {
-        return json{
-            {"id", id},
-            {"type", type},
-            {"shop", shop},
-            {"cost", cost},
-            {"min_vehicles", min_vehicles},
-            {"max_vehicles", max_vehicles},
-            {"vehicles", vehicles}
-        };
-    }
 };
 
-// LotChangeConstraint class derived from Constraint
 class LotChangeConstraint : public Constraint {
 public:
     std::vector<std::vector<int>> partition;
 
-    void from_json(const json& j) override {
-        j.at("id").get_to(id);
-        j.at("type").get_to(type);
-        j.at("shop").get_to(shop);
-        j.at("cost").get_to(cost);
+    void from_json(const json& j, const std::vector<Shop>& all_shops) override {
+        from_json_base(j, all_shops);  // Use base class to parse common fields
         j.at("partition").get_to(partition);
-    }
-
-    json to_json() const override {
-        return json{
-            {"id", id},
-            {"type", type},
-            {"shop", shop},
-            {"cost", cost},
-            {"partition", partition}
-        };
     }
 };
 
-// RollingWindowConstraint class derived from Constraint
 class RollingWindowConstraint : public Constraint {
 public:
     int window_size;
     int max_vehicles;
     std::vector<int> vehicles;
 
-    void from_json(const json& j) override {
-        j.at("id").get_to(id);
-        j.at("type").get_to(type);
-        j.at("shop").get_to(shop);
-        j.at("cost").get_to(cost);
+    void from_json(const json& j, const std::vector<Shop>& all_shops) override {
+        from_json_base(j, all_shops);  // Use base class to parse common fields
         j.at("window_size").get_to(window_size);
         j.at("max_vehicles").get_to(max_vehicles);
         j.at("vehicles").get_to(vehicles);
     }
-
-    json to_json() const override {
-        return json{
-            {"id", id},
-            {"type", type},
-            {"shop", shop},
-            {"cost", cost},
-            {"window_size", window_size},
-            {"max_vehicles", max_vehicles},
-            {"vehicles", vehicles}
-        };
-    }
 };
 
-// Instance class containing constraints
 struct Instance {
     std::vector<Shop> shops;
     int two_tone_delta;
     int resequencing_cost;
     std::vector<Vehicle> vehicles;
-    std::vector<std::shared_ptr<Constraint>> constraints;  // Vector of shared pointers to constraints
+    std::vector<std::shared_ptr<Constraint>> constraints;
 
     Instance() = default;
 
     static Instance from_json(const json& j) {
         Instance instance;
 
+        // Load shops
         for (const auto& shop_json : j.at("shops")) {
             instance.shops.push_back(Shop::from_json(shop_json));
         }
@@ -156,12 +128,14 @@ struct Instance {
         instance.two_tone_delta = j.at("parameters").at("two_tone_delta").get<int>();
         instance.resequencing_cost = j.at("parameters").at("resequencing_cost").get<int>();
 
+        // Load vehicles
         for (const auto& vehicle_json : j.at("vehicles")) {
             instance.vehicles.push_back(Vehicle::from_json(vehicle_json));
         }
 
+        // Load constraints and associate with shops
         for (const auto& constraint_json : j.at("constraints")) {
-            instance.constraints.push_back(Constraint::create_constraint(constraint_json));
+            instance.constraints.push_back(Constraint::create_constraint(constraint_json, instance.shops));
         }
 
         return instance;
