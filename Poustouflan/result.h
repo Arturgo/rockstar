@@ -1,34 +1,44 @@
 #ifndef RESULT_H
 #define RESULT_H
 
-#include <fstream>
 #include <string>
+#include <fstream>
+#include <vector>
+#include <unordered_map>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
-class Result {
-public:
-    std::string nom;
-    std::vector<int> taille_membres;
-    int nombre_membres;
+struct ShopResult {
+    std::vector<int> entry;
+    std::vector<int> exit;
 
-    Result() = default;
-
-    // Convert Result to JSON
     json to_json() const {
         return json{
-            {"nom", nom},
-            {"taille_membres", taille_membres},
-            {"nombre_membres", nombre_membres}
+            {"entry", entry},
+            {"exit", exit}
         };
-    }
-
-    // Write Result to file
-    void save_to_file(const std::string& filename) const {
-        std::ofstream file(filename);
-        file << to_json();
     }
 };
 
-#endif // RESULT_H
+struct Result {
+    std::unordered_map<std::string, ShopResult> shop_results;
+
+    json to_json() const {
+        json j;
+        for (const auto& [shop_name, shop_result] : shop_results) {
+            j[shop_name] = shop_result.to_json();
+        }
+        return j;
+    }
+
+    void save_to_file(const std::string& filename) const {
+        std::ofstream file(filename);
+        if (file.is_open()) {
+            file << to_json().dump(4);
+            file.close();
+        }
+    }
+};
+
+#endif /* ! RESULT_H */

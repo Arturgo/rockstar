@@ -2,13 +2,16 @@
 
 Result solve(const Instance& instance) {
     Result result;
+    int n = instance.vehicles.size();
 
-    result.nom = instance.nom;
-    std::vector<int> taille_membres;
-    for (const std::string& nom : instance.membres)
-        taille_membres.push_back(nom.size());
-    result.taille_membres = taille_membres;
-    result.nombre_membres = instance.membres.size();
+    for (const Shop& shop : instance.shops)
+    {
+        for (int i = 1; i <= n; i++)
+        {
+            result.shop_results[shop.name].entry.push_back(i);
+            result.shop_results[shop.name].exit.push_back(i);
+        }
+    }
 
     return result;
 }

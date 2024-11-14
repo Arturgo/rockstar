@@ -1,7 +1,7 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -I./
+CXXFLAGS = -std=c++17 -I./ -g
 TARGET = solver
-SRC = main.cpp solver.cpp
+SRC = main.cpp solver.cpp instance.cpp
 INSTANCES_DIR = ../instances
 RESULT_DIR = results
 
