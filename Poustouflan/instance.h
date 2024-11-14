@@ -1,6 +1,7 @@
 #ifndef INSTANCE_H
 #define INSTANCE_H
 
+#include <algorithm>
 #include <fstream>
 #include <string>
 #include <nlohmann/json.hpp>
@@ -33,6 +34,7 @@ struct Vehicle {
     static Vehicle from_json(const json& j) {
         Vehicle vehicle;
         j.at("id").get_to(vehicle.id);
+        vehicle.id--;
         std::string type;
         j.at("type").get_to(type);
         vehicle.two_tone = (type == "two-tone");
@@ -81,16 +83,29 @@ public:
         j.at("min_vehicles").get_to(min_vehicles);
         j.at("max_vehicles").get_to(max_vehicles);
         j.at("vehicles").get_to(vehicles);
+        std::sort(vehicles.begin(), vehicles.end());
     }
 };
 
 class LotChangeConstraint : public Constraint {
 public:
-    std::vector<std::vector<int>> partition;
+    std::vector<int> partition; // partition[i] = partition[j] iff vehicles (i, j) same group
 
     void from_json(const json& j, const std::vector<Shop>& all_shops) override {
-        from_json_base(j, all_shops);  // Use base class to parse common fields
-        j.at("partition").get_to(partition);
+        from_json_base(j, all_shops);
+
+        std::vector<std::vector<int>> raw_partition;
+        j.at("partition").get_to(raw_partition);
+
+        for (int i = 0; i < raw_partition.size(); i++)
+        {
+            for (int vehicle : raw_partition[i])
+            {
+                if (partition.size() < vehicle)
+                    partition.resize(vehicle); // ugly
+                partition[vehicle - 1] = i;
+            }
+        }
     }
 };
 
@@ -105,11 +120,13 @@ public:
         j.at("window_size").get_to(window_size);
         j.at("max_vehicles").get_to(max_vehicles);
         j.at("vehicles").get_to(vehicles);
+        std::sort(vehicles.begin(), vehicles.end());
     }
 };
 
 struct Instance {
     std::vector<Shop> shops;
+    int n;
     int two_tone_delta;
     int resequencing_cost;
     std::vector<Vehicle> vehicles;
@@ -128,9 +145,14 @@ struct Instance {
         instance.two_tone_delta = j.at("parameters").at("two_tone_delta").get<int>();
         instance.resequencing_cost = j.at("parameters").at("resequencing_cost").get<int>();
 
+        instance.n = j.at("vehicles").size();
+        instance.vehicles.resize(instance.n);
+
         // Load vehicles
-        for (const auto& vehicle_json : j.at("vehicles")) {
-            instance.vehicles.push_back(Vehicle::from_json(vehicle_json));
+        for (const auto& vehicle_json : j.at("vehicles"))
+        {
+            Vehicle vehicle = Vehicle::from_json(vehicle_json);
+            instance.vehicles[vehicle.id] = vehicle;
         }
 
         // Load constraints and associate with shops
