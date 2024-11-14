@@ -214,12 +214,15 @@ Solution Instance::solve() {
         best.ordres[2].entry
     };
 
-    double T = 1e3;
+    double T = 1e6;
     int i = 0;
-    while(T >= 1e-6) {
+    int bonus = 0;
+    while(bonus < 1000000) {
+        if (T < 1e-9)
+            bonus++;
         vector<vector<int>> old_inputs = inputs;
 
-        if(rand() % 2 == 0) {
+        if(rand() % 15 == 0) {
             int station = rand() % 3;
             int id1 = rand() % nb_vehicules();
             int id2 = rand() % nb_vehicules();
@@ -257,7 +260,7 @@ Solution Instance::solve() {
             inputs = old_inputs;
         }
         i++;
-        if(i % 100 == 0) T *= 0.999;
+        if(i % 50 == 0) T *= 0.99995;
 
         if(i % 10000 == 0) cerr << i << " " << T << " " << best_score << endl;
     }
