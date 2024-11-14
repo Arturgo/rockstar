@@ -40,7 +40,7 @@ int main(int nbArgs, char* args[]) {
 
     double score = solution.score();
     cerr << "score: " << score << endl;
-    solution.stat().display();
+    solution.stat(filename, false).display();
 
     json output_data = solution.to_json();
 
