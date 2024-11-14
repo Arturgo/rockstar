@@ -1,7 +1,7 @@
 #include "solver.h"
 
-Result solve(const Instance& instance) {
-    Result result;
+Solution solve(const Instance& instance) {
+    Solution result;
     int n = instance.vehicles.size();
 
     for (const Shop& shop : instance.shops)

@@ -2,8 +2,8 @@
 #define SOLVER_H
 
 #include "instance.h"
-#include "result.h"
+#include "solution.h"
 
-Result solve(const Instance& instance);
+Solution solve(const Instance& instance);
 
 #endif /* ! SOLVER_H */

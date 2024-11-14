@@ -9,7 +9,7 @@
 
 using json = nlohmann::json;
 
-struct ShopResult {
+struct ShopSolution {
     std::vector<int> entry;
     std::vector<int> exit;
 
@@ -21,8 +21,8 @@ struct ShopResult {
     }
 };
 
-struct Result {
-    std::unordered_map<std::string, ShopResult> shop_results;
+struct Solution {
+    std::unordered_map<std::string, ShopSolution> shop_results;
 
     json to_json() const {
         json j;

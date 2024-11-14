@@ -1,23 +1,22 @@
 #include "instance.h"
-#include <stdexcept>
 
 // Factory function for creating the correct constraint type based on JSON
-std::shared_ptr<Constraint> Constraint::create_constraint(const json& j) {
+std::shared_ptr<Constraint> Constraint::create_constraint(const json& j, const std::vector<Shop>& all_shops) {
     std::string type = j.at("type").get<std::string>();
 
     if (type == "batch_size") {
         auto constraint = std::make_shared<BatchSizeConstraint>();
-        constraint->from_json(j);
+        constraint->from_json(j, all_shops);
         return constraint;
     }
     if (type == "lot_change") {
         auto constraint = std::make_shared<LotChangeConstraint>();
-        constraint->from_json(j);
+        constraint->from_json(j, all_shops);
         return constraint;
     }
     if (type == "rolling_window") {
         auto constraint = std::make_shared<RollingWindowConstraint>();
-        constraint->from_json(j);
+        constraint->from_json(j, all_shops);
         return constraint;
     }
 
