@@ -248,7 +248,7 @@ Solution Instance::solve() {
         sol.ordres.push_back({inputs[2], inputs[2]});
 
         double score = sol.score();
-        double D = best_score - sol.score();
+        double D = best_score - score;
 
         if(D > 0 || rand() / (double)RAND_MAX <= exp(D / T)) {
             best_score = score;
