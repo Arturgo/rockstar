@@ -21,6 +21,7 @@ struct Station {
 };
 
 struct Partition {
+    int id;
     int iStation, cost;
     vector<int> partition;
 };
@@ -50,7 +51,7 @@ struct Solution {
     
     json to_json();
     double score();
-    Stat stat();
+    Stat stat(string path, bool display_part);
 };
 
 struct Instance {
@@ -70,6 +71,8 @@ struct Instance {
     int partition_cost(const vector<int>& partition, const vector<int>& input);
     int window_cost(const vector<bool>& is_in, int size, int maximum, const vector<int>& input);
     int batch_cost(const vector<bool>& is_in, int minimum, int maximum, const vector<int>& input);
+
+    void display_partition(string path, int id, const vector<int>& partition, const vector<int>& input);
 
     Instance(json data);
     Solution solve();
@@ -149,6 +152,7 @@ Instance::Instance(json data) {
             Partition cstr;
             cstr.iStation = id_station(constraint["shop"]);
             cstr.cost = constraint["cost"];
+            cstr.id = constraint["id"];
 
             vector<int> partition(nb_vehicules(), 0);
             int iPart = 0;
@@ -297,6 +301,23 @@ int Instance::partition_cost(const vector<int>& partition, const vector<int>& in
     return total;
 }
 
+void Instance::display_partition(string path, int id, const vector<int>& partition, const vector<int>& input) {
+    string p = path + "-partition" + to_string(id) + ".txt";
+    ofstream fout(p);
+    int current_p = partition[input[0]];
+    int nb = 1;
+    for (int i = 1; i < nb_vehicules(); i++) {
+        if (current_p == partition[input[i]]) {
+            nb += 1;
+        } else {
+            fout << nb << endl;
+            current_p = partition[input[i]];
+            nb = 1;
+        }
+    }
+    fout << nb << endl;
+}
+
 int Instance::window_cost(const vector<bool>& is_in, int size, int maximum, const vector<int>& input) {
     int total = 0;
     int nb_in = 0;
@@ -369,7 +390,7 @@ double Solution::score() {
     return total;
 }
 
-Stat Solution::stat() {
+Stat Solution::stat(string path, bool info) {
     Stat s;
 
     for(int iStation = 0;iStation < (int)inst->stations.size() - 1;iStation++) {
@@ -378,10 +399,15 @@ Stat Solution::stat() {
 
     for(const Partition& part : inst->partitions) {
         s.partition += part.cost * inst->partition_cost(part.partition, ordres[part.iStation].entry);
+        if (info) {
+            inst->display_partition(path, part.id, part.partition, ordres[part.iStation].entry);
+        }
+        cerr << "p" << part.cost << " " << part.cost * inst->partition_cost(part.partition, ordres[part.iStation].entry) << endl;
     }
 
     for(const RollingWindow& window : inst->windows) {
         s.window += window.cost * inst->window_cost(window.is_in, window.window_size, window.maximum, ordres[window.iStation].entry);
+        cerr << "w" << window.cost << " " << window.cost * inst->window_cost(window.is_in, window.window_size, window.maximum, ordres[window.iStation].entry) << endl;
     }
 
     for(const Batch& batch : inst->batches) {
