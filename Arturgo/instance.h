@@ -213,7 +213,7 @@ Solution Instance::solve() {
     Solution best = dumb_solution();
     double best_score = best.score();
 
-    double T = 5e4;
+    double T = 2e4;
     int bonus = 0;
 
     auto lambda = [&](int id) {
@@ -284,7 +284,7 @@ Solution Instance::solve() {
                 best = sol;
                 mtx.unlock();
             } 
-            if(rand() % 100 == 0) T *= 0.99995;
+            if(rand() % 150 == 0) T *= 0.99995;
             if(id == 0 && rand() % 10000 == 0) cerr << T << " " << best_score << endl;
         }
     };
