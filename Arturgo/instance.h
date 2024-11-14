@@ -12,44 +12,91 @@ using namespace std;
 struct Solution;
 struct Instance;
 
+struct Ordre {
+    vector<int> entry, exit;
+};
+
+struct Station {
+    string name;
+};
+
 struct Solution {
     Instance* inst;
 
-    /* TODO : Attributs à adapter au problème */
-        int nbMembres;
-    /* TODOEND */
-
+    vector<Ordre> ordres;
+    
     json to_json();
     double score();
 };
 
 struct Instance {
-    /* TODO : Attributs à adapter au problème */
-        vector<string> membres;
-    /* TODOEND */
+    int delta;
+    vector<Station> stations;
+    vector<bool> two_tones;
+
+    int nb_vehicules() { return two_tones.size(); }
+    vector<int> paint_reorder(const vector<int>& p);
 
     Instance(json data);
     Solution solve();
 };
 
-
-
 /* Logique des fonctions */
 
-Instance::Instance(json data) {
-    /* TODO : Initialisation des attributs à partir de data */
-        for(string membre : data["membres"]) {
-            membres.push_back(membre);
+vector<int> Instance::paint_reorder(const vector<int>& p) {
+    list<int> elems(p.begin(), p.end());
+    vector<bool> seen(nb_vehicules(), false);
+
+    vector<int> pp;
+
+    auto itInsert = elems.begin(); 
+    for(int _ = 0;_ <= delta;_++) {
+        if(itInsert != elems.end())
+            itInsert++;
+    }
+
+    while(!elems.empty()) {
+        int val = *elems.begin();
+        elems.erase(elems.begin());
+
+        if(seen[val] || !two_tones[val]) {
+            pp.push_back(val);
+
+            if(itInsert != elems.end())
+                itInsert++;
+        } else {
+            seen[val] = true;
+            elems.insert(itInsert , val);
         }
-    /* TODOEND */
+    }
+
+    return pp;
+}
+
+Instance::Instance(json data) {
+    for(json shop : data["shops"]) {
+        stations.push_back({(string)shop["name"]});
+    }
+
+    two_tones.resize(data["vehicles"].size());
+    for(json vehicle : data["vehicles"]) {
+        two_tones[(int)vehicle["id"] - 1] = ((string)vehicle["type"] == "two-tone");
+    }
+
+    delta = (int)data["parameters"]["two_tone_delta"];
 }
 
 Solution Instance::solve() {
     Solution sol; sol.inst = this;
 
-    /* TODO : Crée une solution naïve au problème */
-        sol.nbMembres = membres.size();
-    /* TODOEND */
+    vector<int> id(nb_vehicules());
+    iota(id.begin(), id.end(), 0);
+
+    vector<int> pid = paint_reorder(id);
+
+    sol.ordres.push_back({id, id});
+    sol.ordres.push_back({id, pid});
+    sol.ordres.push_back({pid, pid});
 
     return sol;
 }
@@ -57,11 +104,20 @@ Solution Instance::solve() {
 json Solution::to_json() {
     json data;
 
-    /* TODO : Convertir la solution en JSON */
-        data = {
-            {"nb_membres", nbMembres}
-        };
-    /* TODOEND */
+    for(int iStation = 0;iStation < (int)inst->stations.size();iStation++) {
+        json entry_json = json::array(), exit_json = json::array();
+
+        for(int id : ordres[iStation].entry) {
+            entry_json.push_back(1 + id);
+        }
+
+        for(int id : ordres[iStation].exit) {
+            exit_json.push_back(1 + id);
+        }
+
+        data[inst->stations[iStation].name]["entry"] = entry_json;
+        data[inst->stations[iStation].name]["exit"] = exit_json;
+    }
 
     return data;
 }
@@ -70,7 +126,6 @@ double Solution::score() {
     double total = 0.;
 
     /* TODO : Calcule le score de la solution */
-        total = nbMembres;
     /* TODOEND */
 
     return total;
