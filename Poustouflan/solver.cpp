@@ -1,4 +1,6 @@
 #include "solver.h"
+#include <algorithm>
+#include <random>
 
 std::vector<int> paint_perm(std::vector<int>& input_perm, const Instance& instance)
 {
@@ -41,6 +43,9 @@ Solution solve(const Instance& instance) {
     std::vector<int> permutation;
     for (int i = 0; i < n; i++)
         permutation.push_back(i);
+
+    auto rng = std::default_random_engine {};
+    std::shuffle(permutation.begin(), permutation.end(), rng);
 
     for (const Shop& shop : instance.shops)
     {

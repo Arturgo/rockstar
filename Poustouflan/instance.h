@@ -68,22 +68,27 @@ public:
         throw std::runtime_error("Shop not found: " + shop_name);
     }
 
-    virtual void from_json(const json& j, const std::vector<Shop>& all_shops) = 0;
-    static std::shared_ptr<Constraint> create_constraint(const json& j, const std::vector<Shop>& all_shops);
+    virtual void from_json(const json& j, const std::vector<Shop>& all_shops, int n) = 0;
+    static std::shared_ptr<Constraint> create_constraint(const json& j, const std::vector<Shop>& all_shops, int n);
 };
 
 class BatchSizeConstraint : public Constraint {
 public:
     int min_vehicles;
     int max_vehicles;
-    std::vector<int> vehicles;
+    std::vector<bool> vehicles;
 
-    void from_json(const json& j, const std::vector<Shop>& all_shops) override {
+    void from_json(const json& j, const std::vector<Shop>& all_shops, int n) override {
         from_json_base(j, all_shops);
         j.at("min_vehicles").get_to(min_vehicles);
         j.at("max_vehicles").get_to(max_vehicles);
-        j.at("vehicles").get_to(vehicles);
-        std::sort(vehicles.begin(), vehicles.end());
+
+        std::vector<int> raw_vehicles;
+        j.at("vehicles").get_to(raw_vehicles);
+        vehicles.resize(n);
+
+        for (int v : raw_vehicles)
+            vehicles[v] = true;
     }
 };
 
@@ -91,18 +96,17 @@ class LotChangeConstraint : public Constraint {
 public:
     std::vector<int> partition; // partition[i] = partition[j] iff vehicles (i, j) same group
 
-    void from_json(const json& j, const std::vector<Shop>& all_shops) override {
+    void from_json(const json& j, const std::vector<Shop>& all_shops, int n) override {
         from_json_base(j, all_shops);
 
         std::vector<std::vector<int>> raw_partition;
         j.at("partition").get_to(raw_partition);
 
+        partition.resize(n);
         for (int i = 0; i < raw_partition.size(); i++)
         {
             for (int vehicle : raw_partition[i])
             {
-                if (partition.size() < vehicle)
-                    partition.resize(vehicle); // ugly
                 partition[vehicle - 1] = i;
             }
         }
@@ -113,14 +117,19 @@ class RollingWindowConstraint : public Constraint {
 public:
     int window_size;
     int max_vehicles;
-    std::vector<int> vehicles;
+    std::vector<bool> vehicles;
 
-    void from_json(const json& j, const std::vector<Shop>& all_shops) override {
+    void from_json(const json& j, const std::vector<Shop>& all_shops, int n) override {
         from_json_base(j, all_shops);  // Use base class to parse common fields
         j.at("window_size").get_to(window_size);
         j.at("max_vehicles").get_to(max_vehicles);
-        j.at("vehicles").get_to(vehicles);
-        std::sort(vehicles.begin(), vehicles.end());
+
+        std::vector<int> raw_vehicles;
+        j.at("vehicles").get_to(raw_vehicles);
+        vehicles.resize(n);
+
+        for (int v : raw_vehicles)
+            vehicles[v] = true;
     }
 };
 
@@ -157,7 +166,7 @@ struct Instance {
 
         // Load constraints and associate with shops
         for (const auto& constraint_json : j.at("constraints")) {
-            instance.constraints.push_back(Constraint::create_constraint(constraint_json, instance.shops));
+            instance.constraints.push_back(Constraint::create_constraint(constraint_json, instance.shops, instance.n));
         }
 
         return instance;
