@@ -205,12 +205,31 @@ Solution Instance::solve() {
         best.ordres[2].entry
     };
 
-    for(int i = 0;i < 100000;i++) {
-        int station = rand() % 3;
-        int id1 = rand() % nb_vehicules();
-        int id2 = rand() % nb_vehicules();
+    for(int i = 0;i < 1000000;i++) {
+        vector<vector<int>> old_inputs = inputs;
 
-        swap(inputs[station][id1], inputs[station][id2]);
+        if(rand() % 2 == 0) {
+            int station = rand() % 3;
+            int id1 = rand() % nb_vehicules();
+            int id2 = rand() % nb_vehicules();
+            swap(inputs[station][id1], inputs[station][id2]);
+        } else {
+            int id1 = rand() % nb_vehicules();
+            int id2 = rand() % nb_vehicules();
+
+            int pos1, pos2;
+            for(int iStation = 0;iStation < 3;iStation++) {
+                for(int iVehicle = 0;iVehicle < nb_vehicules();iVehicle++) {
+                    if(inputs[iStation][iVehicle] == id1) {
+                        pos1 = iVehicle;
+                    }
+                    if(inputs[iStation][iVehicle] == id2) {
+                        pos2 = iVehicle;
+                    }
+                }
+                swap(inputs[iStation][pos1], inputs[iStation][pos2]);
+            }
+        }
 
         Solution sol; sol.inst = this;
         sol.ordres.push_back({inputs[0], inputs[0]});
@@ -222,9 +241,9 @@ Solution Instance::solve() {
             best_score = score;
             best = sol;
         } else {
-            swap(inputs[station][id1], inputs[station][id2]);
+            inputs = old_inputs;
         }
-        if(i % 1000 == 0) cerr << best_score << " " << score << endl;
+        if(i % 10000 == 0) cerr << best_score << endl;
     }
 
     return best;
