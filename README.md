@@ -11,3 +11,5 @@ On prévoit d'utiliser les librairies suivantes ; à installer et tester avant l
 - https://github.com/nlohmann/json pour le JSON.
 - https://github.com/ERGO-Code/HiGHS pour le solveur LP/MIP.
 
+## Instances
+- Mettre les instances d'entrée en json dans ce dossier
